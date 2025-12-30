@@ -1,17 +1,18 @@
 // ==========================================
-// OPTION CHAIN SERVICE – FINAL (A3.0)
-// Angel Validated | No Fake Strikes
+// OPTION CHAIN SERVICE – FINAL (A3.1)
+// Angel = SINGLE SOURCE OF TRUTH
+// No Fake / Manual Strikes
 // ==========================================
 
 const { formatOptionSymbol, isMonthlyExpiry } = require("./symbol.service");
 const { getOptionToken } = require("./token.service");
 
 // ==========================================
-// BUILD OPTION CHAIN (ANGEL SOURCE OF TRUTH)
+// BUILD OPTION CHAIN (ANGEL VALIDATED)
 // ==========================================
 function buildOptionChain({
   index,        // NIFTY / BANKNIFTY
-  expiryDate,   // JS Date
+  expiryDate,   // JS Date object
   strikes = [], // strikes from strike.service (Angel validated)
 }) {
   const chain = {};
@@ -21,9 +22,9 @@ function buildOptionChain({
     : "WEEKLY";
 
   strikes.forEach((strike) => {
-    // ===============================
-    // FORMAT SYMBOLS
-    // ===============================
+    // -------------------------------
+    // FORMAT OPTION SYMBOLS
+    // -------------------------------
     const ceSymbol = formatOptionSymbol({
       index,
       expiryDate,
@@ -40,9 +41,9 @@ function buildOptionChain({
       expiryType,
     });
 
-    // ===============================
+    // -------------------------------
     // FETCH TOKENS FROM ANGEL MASTER
-    // ===============================
+    // -------------------------------
     const ceToken = getOptionToken(ceSymbol);
     const peToken = getOptionToken(peSymbol);
 
@@ -52,9 +53,9 @@ function buildOptionChain({
       return;
     }
 
-    // ===============================
+    // -------------------------------
     // FINAL STRIKE OBJECT
-    // ===============================
+    // -------------------------------
     chain[strike] = {
       strike,
 
