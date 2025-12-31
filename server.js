@@ -18,8 +18,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 3000;
+// ROOT CHECK
+app.get("/", (req, res) => {
+  res.send("Mahashakti Market Pro API is LIVE 🚀");
+});
 
+// HEALTH CHECK (Render / Monitoring)
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
+const PORT = process.env.PORT || 3000;
 // ==========================================
 // ENV CHECK
 // ==========================================
