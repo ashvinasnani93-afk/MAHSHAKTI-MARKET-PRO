@@ -4,14 +4,14 @@
 // ==========================================
 
 /**
- * finalDecision
+ * FinalDecision
  * @param {object} trendResult
  * @param {object} rsiResult
  * @param {object} breakoutResult
  * @param {object} volumeResult
  * @returns {object}
  */
-function finalDecision({
+function FinalDecision({
   trendResult,
   rsiResult,
   breakoutResult,
@@ -60,5 +60,5 @@ function finalDecision({
 // EXPORT
 // ==========================================
 module.exports = {
-  finalDecision,
+  FinalDecision,
 };
