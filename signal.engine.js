@@ -1,13 +1,13 @@
 // ==========================================
-// SIGNAL ENGINE – STEP 1 (TREND CHECK)
+// SIGNAL ENGINE – CORE CHECKS ONLY
+// Trend / RSI / Breakout / Volume
+// ==========================================
+
+// ==========================================
+// STEP 1 – TREND CHECK
 // EMA 20 / EMA 50
 // ==========================================
 
-const { FinalDecision } = require("./signalDecision.service");
-
-/**
- * STEP 1 – TREND CHECK
- */
 function checkTrend({ closes = [], ema20 = [], ema50 = [] }) {
   if (!closes.length || !ema20.length || !ema50.length) {
     return {
@@ -41,12 +41,9 @@ function checkTrend({ closes = [], ema20 = [], ema50 = [] }) {
 }
 
 // ==========================================
-// SIGNAL ENGINE – STEP 2 (RSI SANITY CHECK)
+// STEP 2 – RSI SANITY CHECK
 // ==========================================
 
-/**
- * STEP 2 – RSI CHECK
- */
 function checkRSI({ rsi, trend }) {
   if (typeof rsi !== "number") {
     return {
@@ -76,13 +73,10 @@ function checkRSI({ rsi, trend }) {
 }
 
 // ==========================================
-// SIGNAL ENGINE – STEP 3
-// BREAKOUT / BREAKDOWN (CLOSE BASED)
+// STEP 3 – BREAKOUT / BREAKDOWN
+// CLOSE BASED CONFIRMATION
 // ==========================================
 
-/**
- * STEP 3 – BREAKOUT CHECK
- */
 function checkBreakout({ close, support, resistance, trend }) {
   if (
     typeof close !== "number" ||
@@ -118,13 +112,10 @@ function checkBreakout({ close, support, resistance, trend }) {
 }
 
 // ==========================================
-// SIGNAL ENGINE – STEP 4
-// VOLUME CONFIRMATION
+// STEP 4 – VOLUME CONFIRMATION
+// FAKE BREAKOUT GUARD
 // ==========================================
 
-/**
- * STEP 4 – VOLUME CHECK
- */
 function checkVolume({ volume, avgVolume }) {
   if (typeof volume !== "number" || typeof avgVolume !== "number") {
     return {
@@ -147,71 +138,12 @@ function checkVolume({ volume, avgVolume }) {
 }
 
 // ==========================================
-// SIGNAL ENGINE – STEP 5
-// FINAL DECISION RUNNER
+// EXPORTS (ONLY CHECKS – NO FINAL DECISION)
 // ==========================================
 
-/**
- * FINAL SIGNAL ENGINE
- */
-function runSignalEngine({
-  closes,
-  ema20,
-  ema50,
-  rsi,
-  support,
-  resistance,
-  volume,
-  avgVolume,
-}) {
-  const trendResult = checkTrend({ closes, ema20, ema50 });
-
-  if (trendResult.trend === "NO_TRADE") {
-    return {
-      action: "WAIT",
-      reason: trendResult.reason,
-    };
-  }
-
-  const rsiResult = checkRSI({
-    rsi,
-    trend: trendResult.trend,
-  });
-
-  if (!rsiResult.allowed) {
-    return {
-      action: "WAIT",
-      reason: rsiResult.reason,
-    };
-  }
-
-  const breakoutResult = checkBreakout({
-    close: closes[closes.length - 1],
-    support,
-    resistance,
-    trend: trendResult.trend,
-  });
-
-  const volumeResult = checkVolume({
-    volume,
-    avgVolume,
-  });
-
-  return FinalDecision({
-    trendResult,
-    rsiResult,
-    breakoutResult,
-    volumeResult,
-  });
-}
-
-// ==========================================
-// EXPORTS
-// ==========================================
 module.exports = {
   checkTrend,
   checkRSI,
   checkBreakout,
   checkVolume,
-  runSignalEngine,
 };
