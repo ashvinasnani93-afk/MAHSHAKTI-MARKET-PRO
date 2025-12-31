@@ -2,7 +2,7 @@
 // MAHASHAKTI MARKET PRO
 // FINAL – ALL STOCKS + OPTIONS LTP
 // ==========================================
-const { getSignal } = require("./signal.api");
+
 const express = require("express");
 const cors = require("cors");
 const WebSocket = require("ws");
@@ -10,13 +10,17 @@ const https = require("https");
 const { SmartAPI } = require("smartapi-javascript");
 const { authenticator } = require("otplib");
 
+const { getSignal } = require("./signal.api");
 const { getOptionChain } = require("./optionchain.api");
 const { loadOptionSymbolMaster } = require("./token.service");
-const { buildOptionChain } = require("./optionchain.service"); // ✅ FIXED (lowercase)
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// ==========================================
+// BASIC ROUTES
+// ==========================================
 
 // ROOT CHECK
 app.get("/", (req, res) => {
@@ -32,12 +36,10 @@ app.get("/health", (req, res) => {
   });
 });
 
-
-app.post("/signal", getSignal);
-
 const PORT = process.env.PORT || 3000;
+
 // ==========================================
-// ENV CHECK
+// ENV CHECK (IMPORTANT – BEFORE ANGEL)
 // ==========================================
 const {
   ANGEL_API_KEY,
@@ -50,6 +52,11 @@ if (!ANGEL_API_KEY) throw new Error("ANGEL_API_KEY missing");
 if (!ANGEL_CLIENT_ID) throw new Error("ANGEL_CLIENT_ID missing");
 if (!ANGEL_PASSWORD) throw new Error("ANGEL_PASSWORD missing");
 if (!ANGEL_TOTP_SECRET) throw new Error("ANGEL_TOTP_SECRET missing");
+
+// ==========================================
+// SIGNAL API (BUY / SELL / WAIT)
+// ==========================================
+app.post("/signal", getSignal);
 
 // ==========================================
 // GLOBAL STATE
@@ -103,7 +110,10 @@ function loadSymbolMaster() {
               }
             });
 
-            console.log("✅ STOCK Symbols Loaded:", Object.keys(symbolTokenMap).length);
+            console.log(
+              "✅ STOCK Symbols Loaded:",
+              Object.keys(symbolTokenMap).length
+            );
             resolve();
           });
         }
@@ -137,7 +147,7 @@ async function angelLogin() {
     console.log("✅ Angel Login SUCCESS");
     startWebSocket();
   } catch (e) {
-    console.error("❌ Angel Login Error:", e.message);
+    console.error("❌ Angel Login Error:", e);
     setTimeout(angelLogin, 5000);
   } finally {
     isLoggingIn = false;
@@ -173,7 +183,10 @@ function startWebSocket() {
     if (symbol && ltp) latestLTP[symbol] = ltp;
   });
 
-  ws.on("close", () => setTimeout(startWebSocket, 3000));
+  ws.on("close", () => {
+    console.log("🔴 WebSocket Disconnected – reconnecting...");
+    setTimeout(startWebSocket, 3000);
+  });
 }
 
 // ==========================================
@@ -209,7 +222,12 @@ app.get("/angel/ltp", (req, res) => {
   subscribeSymbol(symbol);
 
   if (latestLTP[symbol]) {
-    return res.json({ status: true, symbol, ltp: latestLTP[symbol], live: true });
+    return res.json({
+      status: true,
+      symbol,
+      ltp: latestLTP[symbol],
+      live: true,
+    });
   }
 
   res.json({ status: false, message: "LTP not ready yet" });
@@ -230,7 +248,7 @@ app.listen(PORT, async () => {
     await loadOptionSymbolMaster();
     await angelLogin();
   } catch (e) {
-    console.error("❌ Startup failed:", e.message);
+    console.error("❌ Startup failed:", e);
     process.exit(1);
   }
 });
