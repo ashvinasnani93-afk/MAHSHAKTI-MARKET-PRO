@@ -3,139 +3,91 @@
 // EMA 20 / EMA 50
 // ==========================================
 
-/**
- * checkTrend
- * @param {number[]} closes - candle close prices (latest last)
- * @param {number[]} ema20  - EMA 20 values (latest last)
- * @param {number[]} ema50  - EMA 50 values (latest last)
- * @returns {object}
- */
 function checkTrend({ closes = [], ema20 = [], ema50 = [] }) {
-  if (
-    closes.length === 0 ||
-    ema20.length === 0 ||
-    ema50.length === 0
-  ) {
-    return {
-      trend: "NO_TRADE",
-      reason: "insufficient data",
-    };
+  if (!closes.length || !ema20.length || !ema50.length) {
+    return { trend: "NO_TRADE", reason: "insufficient data" };
   }
 
-  const price = closes[closes.length - 1];
-  const e20 = ema20[ema20.length - 1];
-  const e50 = ema50[ema50.length - 1];
+  const price = closes.at(-1);
+  const e20 = ema20.at(-1);
+  const e50 = ema50.at(-1);
 
-  // 📈 UPTREND
   if (price > e20 && e20 > e50) {
-    return {
-      trend: "UPTREND",
-      reason: "price > EMA20 > EMA50",
-    };
+    return { trend: "UPTREND", reason: "price > EMA20 > EMA50" };
   }
 
-  // 📉 DOWNTREND
   if (price < e20 && e20 < e50) {
-    return {
-      trend: "DOWNTREND",
-      reason: "price < EMA20 < EMA50",
-    };
+    return { trend: "DOWNTREND", reason: "price < EMA20 < EMA50" };
   }
 
-  // ⛔ NO TRADE ZONE
-  return {
-    trend: "NO_TRADE",
-    reason: "EMA compression / sideways",
-  };
+  return { trend: "NO_TRADE", reason: "EMA compression / sideways" };
 }
 
 // ==========================================
 // SIGNAL ENGINE – STEP 2 (RSI SANITY CHECK)
 // ==========================================
 
-/**
- * checkRSI
- * @param {number} rsi - latest RSI value
- * @param {string} trend - UPTREND / DOWNTREND / NO_TRADE
- * @returns {object}
- */
 function checkRSI({ rsi, trend }) {
   if (typeof rsi !== "number") {
-    return {
-      allowed: false,
-      reason: "RSI data missing",
-    };
+    return { allowed: false, reason: "RSI missing" };
   }
 
-  // ❌ Overbought – no fresh BUY
   if (trend === "UPTREND" && rsi >= 70) {
-    return {
-      allowed: false,
-      reason: "RSI overbought (>=70)",
-    };
+    return { allowed: false, reason: "RSI overbought" };
   }
 
-  // ❌ Oversold – no fresh SELL
   if (trend === "DOWNTREND" && rsi <= 30) {
-    return {
-      allowed: false,
-      reason: "RSI oversold (<=30)",
-    };
+    return { allowed: false, reason: "RSI oversold" };
   }
 
-  // ✅ Safe zone
-  return {
-    allowed: true,
-    reason: "RSI within safe range",
-  };
+  return { allowed: true, reason: "RSI OK" };
 }
 
 // ==========================================
 // SIGNAL ENGINE – STEP 3
-// BREAKOUT / BREAKDOWN (CANDLE CLOSE)
+// BREAKOUT / BREAKDOWN (CLOSE BASED)
 // ==========================================
 
-/**
- * checkBreakout
- * @param {number} close - latest candle close price
- * @param {number} support - support level
- * @param {number} resistance - resistance level
- * @param {string} trend - UPTREND / DOWNTREND
- */
 function checkBreakout({ close, support, resistance, trend }) {
   if (
     typeof close !== "number" ||
     typeof support !== "number" ||
     typeof resistance !== "number"
   ) {
-    return {
-      allowed: false,
-      reason: "price levels missing",
-    };
+    return { allowed: false, reason: "levels missing" };
   }
 
-  // ✅ BUY condition
   if (trend === "UPTREND" && close > resistance) {
-    return {
-      allowed: true,
-      action: "BUY",
-      reason: "bullish breakout with close",
-    };
+    return { allowed: true, action: "BUY", reason: "bullish breakout" };
   }
 
-  // ✅ SELL condition
   if (trend === "DOWNTREND" && close < support) {
-    return {
-      allowed: true,
-      action: "SELL",
-      reason: "bearish breakdown with close",
-    };
+    return { allowed: true, action: "SELL", reason: "bearish breakdown" };
   }
 
-  // ❌ No confirmation
+  return { allowed: false, reason: "no breakout confirmation" };
+}
+
+// ==========================================
+// SIGNAL ENGINE – STEP 4
+// VOLUME CONFIRMATION (FAKE BREAKOUT GUARD)
+// ==========================================
+
+function checkVolume({ volume, avgVolume }) {
+  if (
+    typeof volume !== "number" ||
+    typeof avgVolume !== "number"
+  ) {
+    return { allowed: false, reason: "volume data missing" };
+  }
+
+  if (volume > avgVolume) {
+    return { allowed: true, reason: "volume confirmation OK" };
+  }
+
   return {
     allowed: false,
-    reason: "no confirmed breakout/breakdown",
+    reason: "low volume – fake breakout risk",
   };
 }
 
@@ -146,4 +98,5 @@ module.exports = {
   checkTrend,
   checkRSI,
   checkBreakout,
+  checkVolume,
 };
