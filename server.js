@@ -2,7 +2,7 @@
 // MAHASHAKTI MARKET PRO
 // FINAL – ALL STOCKS + OPTIONS LTP
 // ==========================================
-
+const { getSignal } = require("./signal.api");
 const express = require("express");
 const cors = require("cors");
 const WebSocket = require("ws");
@@ -25,12 +25,15 @@ app.get("/", (req, res) => {
 
 // HEALTH CHECK (Render / Monitoring)
 app.get("/health", (req, res) => {
- res.json({
-  status: "ok",
-  uptime: process.uptime(),
-  timestamp: Date.now(),
+  res.json({
+    status: "ok",
+    uptime: process.uptime(),
+    timestamp: Date.now(),
+  });
 });
-});
+
+// SIGNAL API (BUY / SELL / WAIT)
+app.post("/signal", getSignal);
 
 const PORT = process.env.PORT || 3000;
 // ==========================================
