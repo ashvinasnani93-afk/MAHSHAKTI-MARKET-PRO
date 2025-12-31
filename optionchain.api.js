@@ -3,7 +3,7 @@
 // Angel = SINGLE SOURCE OF TRUTH
 // ==========================================
 
-const { getValidStrikes } = require("../strike.service");
+const { getValidStrikes } = require("./strike.service");
 const { buildOptionChain } = require("../optionChain.service");
 
 // ==========================================
