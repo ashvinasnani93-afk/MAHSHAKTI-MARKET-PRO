@@ -48,10 +48,50 @@ function checkTrend({ closes = [], ema20 = [], ema50 = [] }) {
     reason: "EMA compression / sideways",
   };
 }
+// ==========================================
+// SIGNAL ENGINE – STEP 2 (RSI SANITY CHECK)
+// ==========================================
 
+/**
+ * checkRSI
+ * @param {number} rsi - latest RSI value
+ * @param {string} trend - UPTREND / DOWNTREND / NO_TRADE
+ * @returns {object}
+ */
+function checkRSI({ rsi, trend }) {
+  if (typeof rsi !== "number") {
+    return {
+      allowed: false,
+      reason: "RSI data missing",
+    };
+  }
+
+  // ❌ Overbought – no fresh BUY
+  if (trend === "UPTREND" && rsi >= 70) {
+    return {
+      allowed: false,
+      reason: "RSI overbought (>=70)",
+    };
+  }
+
+  // ❌ Oversold – no fresh SELL
+  if (trend === "DOWNTREND" && rsi <= 30) {
+    return {
+      allowed: false,
+      reason: "RSI oversold (<=30)",
+    };
+  }
+
+  // ✅ Safe zone
+  return {
+    allowed: true,
+    reason: "RSI within safe range",
+  };
+}
 // ==========================================
 // EXPORT
 // ==========================================
 module.exports = {
   checkTrend,
+  checkRSI,
 };
