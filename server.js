@@ -32,7 +32,7 @@ app.get("/health", (req, res) => {
   });
 });
 
-// SIGNAL API (BUY / SELL / WAIT)
+
 app.post("/signal", getSignal);
 
 const PORT = process.env.PORT || 3000;
