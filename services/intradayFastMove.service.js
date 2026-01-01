@@ -35,12 +35,15 @@ function detectFastMove(data = {}) {
   if (
     typeof ltp !== "number" ||
     typeof prevLtp !== "number" ||
+    prevLtp <= 0 ||
     typeof volume !== "number" ||
-    typeof avgVolume !== "number"
+    typeof avgVolume !== "number" ||
+    volume <= 0 ||
+    avgVolume <= 0
   ) {
     return {
       signal: "WAIT",
-      reason: "Fast-move: insufficient data",
+      reason: "Fast-move: insufficient or invalid data",
     };
   }
 
@@ -78,7 +81,7 @@ function detectFastMove(data = {}) {
   const absChange = Math.abs(changePercent);
 
   // -------------------------------
-  // EXTREME SPIKE SAFETY
+  // EXTREME SPIKE SAFETY (CAPITAL PROTECT)
   // -------------------------------
   if (absChange > 1.8) {
     return {
