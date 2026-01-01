@@ -18,7 +18,7 @@ const { applySafety } = require("./signalSafety.service");
 // 🏦 INSTITUTIONAL CONTEXT (REAL – PHASE-2A)
 const { summarizeOI } = require("./institutional/oi.service");
 const { getPCRContext } = require("./institutional/pcr.service");
-const { detectFastMove } = require("./services/intradayFastMove.service");
+
 /**
  * finalDecision
  * @param {object} data
