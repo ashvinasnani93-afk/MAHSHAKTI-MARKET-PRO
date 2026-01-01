@@ -30,7 +30,7 @@ function detectFastMove(data = {}) {
   } = data;
 
   // -------------------------------
-  // HARD SAFETY
+  // HARD SAFETY – INPUT
   // -------------------------------
   if (
     typeof ltp !== "number" ||
@@ -45,7 +45,17 @@ function detectFastMove(data = {}) {
   }
 
   // -------------------------------
-  // RESULT / EXPIRY BLOCK
+  // TREND SAFETY
+  // -------------------------------
+  if (trend !== "UPTREND" && trend !== "DOWNTREND") {
+    return {
+      signal: "WAIT",
+      reason: "Fast-move blocked: trend not clear",
+    };
+  }
+
+  // -------------------------------
+  // RESULT / EXPIRY BLOCK (LOCKED)
   // -------------------------------
   if (isResultDay) {
     return {
@@ -68,6 +78,17 @@ function detectFastMove(data = {}) {
   const absChange = Math.abs(changePercent);
 
   // -------------------------------
+  // EXTREME SPIKE SAFETY
+  // -------------------------------
+  if (absChange > 1.8) {
+    return {
+      signal: "HOLD",
+      reason: "Extreme spike detected – capital protection mode",
+      mode: "FAST_MOVE",
+    };
+  }
+
+  // -------------------------------
   // FAST MOVE CONDITIONS
   // -------------------------------
   const priceBurst = absChange >= 0.35; // sudden move
@@ -76,7 +97,7 @@ function detectFastMove(data = {}) {
   if (!priceBurst || !volumeBurst) {
     return {
       signal: "WAIT",
-      reason: "No fast-move detected",
+      reason: "No intraday fast-move confirmation",
     };
   }
 
@@ -86,7 +107,7 @@ function detectFastMove(data = {}) {
   if (changePercent > 0 && trend === "UPTREND") {
     return {
       signal: "BUY",
-      reason: "Intraday fast bullish move with volume",
+      reason: "Intraday fast bullish move with volume confirmation",
       mode: "FAST_MOVE",
     };
   }
@@ -94,7 +115,7 @@ function detectFastMove(data = {}) {
   if (changePercent < 0 && trend === "DOWNTREND") {
     return {
       signal: "SELL",
-      reason: "Intraday fast bearish move with volume",
+      reason: "Intraday fast bearish move with volume confirmation",
       mode: "FAST_MOVE",
     };
   }
@@ -104,7 +125,7 @@ function detectFastMove(data = {}) {
   // -------------------------------
   return {
     signal: "HOLD",
-    reason: "Fast move detected but trend misaligned",
+    reason: "Fast move detected but higher trend misaligned",
     mode: "FAST_MOVE",
   };
 }
