@@ -4,10 +4,27 @@
 // ==========================================
 
 /**
+ * detectBuildup
+ * Agar Angel se raw OI data aaye (oiChange + priceChange)
+ */
+function detectBuildup(item = {}) {
+  const oiChange = Number(item.oiChange || 0);
+  const priceChange = Number(item.priceChange || 0);
+
+  if (oiChange > 0 && priceChange > 0) return "LONG_BUILDUP";
+  if (oiChange > 0 && priceChange < 0) return "SHORT_BUILDUP";
+  if (oiChange < 0 && priceChange > 0) return "SHORT_COVERING";
+  if (oiChange < 0 && priceChange < 0) return "LONG_UNWINDING";
+
+  return "NEUTRAL";
+}
+
+/**
  * summarizeOI
  * @param {Array} oiData
- * Each item example:
- * { buildup: "LONG_BUILDUP" | "SHORT_BUILDUP" | "SHORT_COVERING" | "LONG_UNWINDING" }
+ * Supports BOTH:
+ * 1️⃣ { buildup: "LONG_BUILDUP" }
+ * 2️⃣ { oiChange, priceChange }  ← Angel real data
  */
 function summarizeOI(oiData = []) {
   let longBuildUp = 0;
@@ -16,7 +33,9 @@ function summarizeOI(oiData = []) {
   let longUnwinding = 0;
 
   oiData.forEach((item) => {
-    switch (item.buildup) {
+    const buildup = item.buildup || detectBuildup(item);
+
+    switch (buildup) {
       case "LONG_BUILDUP":
         longBuildUp++;
         break;
