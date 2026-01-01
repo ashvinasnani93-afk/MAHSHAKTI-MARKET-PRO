@@ -11,7 +11,7 @@ const {
   checkVolume,
 } = require("./signal.engine");
 // ⚡ INTRADAY FAST MOVE ENGINE
-const { detectFastMove } = require("./intradayFastMove.service");
+const { detectFastMove } = require("./services/intradayFastMove.service");
 // 🔒 SAFETY LAYER (Phase-1 LOCKED)
 const { applySafety } = require("./signalSafety.service");
 
