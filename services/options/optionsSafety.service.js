@@ -1,38 +1,105 @@
 // ==================================================
-// OPTIONS SAFETY SERVICE (PHASE-3)
-// Capital Protection Layer (NO SIGNAL)
+// OPTIONS SAFETY SERVICE (PHASE-4)
+// Capital & Behaviour Protection Layer (NO SIGNAL)
 // ==================================================
 
 /**
  * getOptionsSafetyContext
- * @param {object} data
+ * @param {object} context
  * @returns {object}
  */
-function getOptionsSafetyContext(data = {}) {
+function getOptionsSafetyContext(context = {}) {
   const {
+    symbol,
     expiryType,
     tradeContext,
-  } = data;
+  } = context;
 
   // ------------------------------
-  // SAFETY FLAGS
+  // DEFAULT SAFETY OBJECT
   // ------------------------------
   const safety = {
-    isExpiryDay: expiryType === "EXPIRY_DAY",
-    isWeeklyExpiry: expiryType === "WEEKLY_EXPIRY",
-    isMonthlyExpiry: expiryType === "MONTHLY_EXPIRY",
-
-    intradayAllowed: tradeContext === "INTRADAY_OPTIONS",
-    positionalAllowed: tradeContext === "POSITIONAL_OPTIONS",
+    allowTrade: true,
+    riskLevel: "NORMAL",
+    reason: null,
   };
+
+  // ------------------------------
+  // WEEKLY / EXPIRY DAY RISK
+  // ------------------------------
+  if (expiryType === "WEEKLY_EXPIRY") {
+    safety.riskLevel = "HIGH";
+  }
+
+  // ------------------------------
+  // POSITIONAL OPTIONS RISK
+  // ------------------------------
+  if (tradeContext === "POSITIONAL_OPTIONS") {
+    safety.riskLevel = "HIGH";
+  }
 
   // ------------------------------
   // FINAL SAFETY CONTEXT
   // ------------------------------
   return {
-    status: "SAFE_CHECK_READY",
+    ...context,
     safety,
-    note: "Safety context prepared (no trade decision)",
+    note: "Options safety context prepared (no trade decision)",
+  };
+}
+
+// ------------------------------
+// EXPORT
+// ------------------------------
+module.exports = {
+  getOptionsSafetyContext,
+};// ==================================================
+// OPTIONS SAFETY SERVICE (PHASE-4)
+// Capital & Behaviour Protection Layer (NO SIGNAL)
+// ==================================================
+
+/**
+ * getOptionsSafetyContext
+ * @param {object} context
+ * @returns {object}
+ */
+function getOptionsSafetyContext(context = {}) {
+  const {
+    symbol,
+    expiryType,
+    tradeContext,
+  } = context;
+
+  // ------------------------------
+  // DEFAULT SAFETY OBJECT
+  // ------------------------------
+  const safety = {
+    allowTrade: true,
+    riskLevel: "NORMAL",
+    reason: null,
+  };
+
+  // ------------------------------
+  // WEEKLY / EXPIRY DAY RISK
+  // ------------------------------
+  if (expiryType === "WEEKLY_EXPIRY") {
+    safety.riskLevel = "HIGH";
+  }
+
+  // ------------------------------
+  // POSITIONAL OPTIONS RISK
+  // ------------------------------
+  if (tradeContext === "POSITIONAL_OPTIONS") {
+    safety.riskLevel = "HIGH";
+  }
+
+  // ------------------------------
+  // FINAL SAFETY CONTEXT
+  // ------------------------------
+  return {
+    ...context,
+    safety,
+    note: "Options safety context prepared (no trade decision)",
   };
 }
 
