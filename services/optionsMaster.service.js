@@ -4,6 +4,8 @@
 // NIFTY / BANKNIFTY / STOCK OPTIONS
 // ==========================================
 
+const { getOptionsSafetyContext } = require("./options/optionsSafety.service");
+
 /**
  * getOptionsContext
  * @param {object} data
@@ -46,6 +48,14 @@ function getOptionsContext(data = {}) {
       : "POSITIONAL_OPTIONS";
 
   // -----------------------------
+  // SAFETY CONTEXT (NO SIGNAL)
+  // -----------------------------
+  const safetyContext = getOptionsSafetyContext({
+    expiryType,
+    tradeContext,
+  });
+
+  // -----------------------------
   // BASE CONTEXT (NO SIGNAL)
   // -----------------------------
   return {
@@ -54,6 +64,7 @@ function getOptionsContext(data = {}) {
     spotPrice,
     expiryType,
     tradeContext,
+    safety: safetyContext,
     note: "Options context prepared (no signal yet)",
   };
 }
