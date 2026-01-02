@@ -11,19 +11,21 @@
  * @returns {object}
  */
 function calculateStrike(spotPrice, expiryType) {
-  // Base ATM rounded to nearest 50
+  // ATM rounded to nearest 50
   const atm = Math.round(spotPrice / 50) * 50;
 
-  // Distance rules
+  // Distance rules (risk-locked)
   const percent =
-    expiryType === "WEEKLY_EXPIRY" ? 0.012 : 0.025; // 1.2% weekly | 2.5% monthly
+    expiryType === "WEEKLY_EXPIRY"
+      ? 0.01   // 1.0% weekly (safer)
+      : 0.025; // 2.5% monthly (positional seller)
 
   const distance = Math.round((spotPrice * percent) / 50) * 50;
 
   return {
+    atm,
     ceStrike: atm + distance,
     peStrike: atm - distance,
-    atm,
     distance,
   };
 }
@@ -38,6 +40,7 @@ function calculateStrike(spotPrice, expiryType) {
 function evaluateSellerContext(context = {}) {
   const {
     trend,        // UPTREND / DOWNTREND / SIDEWAYS
+    regime,       // SIDEWAYS / TRENDING / HIGH_RISK
     rsi,
     safety,
     spotPrice,
@@ -54,7 +57,6 @@ function evaluateSellerContext(context = {}) {
     };
   }
 
-  // Expiry / Event day = no selling
   if (safety.isExpiryDay || safety.isResultDay) {
     return {
       sellerAllowed: false,
@@ -63,9 +65,9 @@ function evaluateSellerContext(context = {}) {
   }
 
   // ----------------------------------
-  // MARKET REGIME CHECK
+  // REGIME CHECK (FINAL AUTHORITY)
   // ----------------------------------
-  if (trend !== "SIDEWAYS") {
+  if (regime !== "SIDEWAYS") {
     return {
       sellerAllowed: false,
       note: "Market not sideways – option selling avoided",
@@ -82,7 +84,6 @@ function evaluateSellerContext(context = {}) {
     };
   }
 
-  // Extreme RSI = avoid selling
   if (rsi > 65 || rsi < 35) {
     return {
       sellerAllowed: false,
@@ -114,7 +115,7 @@ function evaluateSellerContext(context = {}) {
     peStrike: strikeInfo.peStrike,
     strikeDistance: strikeInfo.distance,
     note:
-      "Sideways market + stable RSI → CE & PE selling allowed (safe distance)",
+      "Sideways market + stable RSI → CE & PE selling allowed at safe distance",
   };
 }
 
