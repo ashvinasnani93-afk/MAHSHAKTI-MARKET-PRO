@@ -22,6 +22,7 @@ function generateOptionsSignal(context = {}) {
 
     ema20,
     ema50,
+    rsi, // ✅ RSI added
   } = context;
 
   // --------------------------------------------------
@@ -99,13 +100,40 @@ function generateOptionsSignal(context = {}) {
   }
 
   // --------------------------------------------------
+  // RSI SANITY CHECK (OPTIONS) – LOCKED
+  // --------------------------------------------------
+  if (typeof rsi !== "number") {
+    return {
+      status: "WAIT",
+      reason: "RSI data missing",
+    };
+  }
+
+  // Overbought zone
+  if (rsi >= 70) {
+    return {
+      status: "WAIT",
+      reason: "RSI overbought – no fresh options entry",
+    };
+  }
+
+  // Oversold zone
+  if (rsi <= 30) {
+    return {
+      status: "WAIT",
+      reason: "RSI oversold – no fresh options entry",
+    };
+  }
+
+  // --------------------------------------------------
   // FINAL ENGINE OUTPUT (NO BUY / SELL)
   // --------------------------------------------------
   return {
     status: "WAIT",
     engine: "OPTIONS_SIGNAL_ENGINE",
     trend,
-    note: "EMA trend evaluated. Signal rules locked (no execution).",
+    rsiStatus: "NORMAL",
+    note: "EMA trend + RSI sanity evaluated. Signal rules locked (no execution).",
   };
 }
 
