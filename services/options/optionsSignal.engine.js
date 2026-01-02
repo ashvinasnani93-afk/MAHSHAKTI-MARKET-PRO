@@ -25,7 +25,6 @@ function isNoTradeZone({ spotPrice, ema20, ema50 }) {
   const priceNearEMA =
     (Math.abs(spotPrice - ema20) / spotPrice) * 100 < 0.15;
 
-  // NO-TRADE ZONE condition
   if (emaDiffPercent < 0.2 && priceNearEMA) {
     return true;
   }
@@ -39,7 +38,6 @@ function isNoTradeZone({ spotPrice, ema20, ema50 }) {
  * @returns {object}
  *
  * Context comes ONLY from optionsMaster.service
- * No direct market / API calls here
  */
 function generateOptionsSignal(context = {}) {
   const {
@@ -51,7 +49,8 @@ function generateOptionsSignal(context = {}) {
 
     ema20,
     ema50,
-    rsi, // ✅ RSI added
+    rsi,
+    vix, // optional (future safety)
   } = context;
 
   // --------------------------------------------------
@@ -81,10 +80,13 @@ function generateOptionsSignal(context = {}) {
     };
   }
 
-  if (safety.isExpiryDay) {
+  if (safety.isExpiryDay || safety.isResultDay) {
     return {
       status: "WAIT",
-      reason: "Blocked by expiry-day safety rule",
+      regime: "HIGH_RISK",
+      buyerAllowed: false,
+      sellerAllowed: false,
+      reason: "Result / expiry day risk",
     };
   }
 
@@ -109,7 +111,7 @@ function generateOptionsSignal(context = {}) {
   }
 
   // --------------------------------------------------
-  // TREND CHECK (EMA 20 / EMA 50) – LOCKED
+  // TREND CHECK (EMA 20 / EMA 50)
   // --------------------------------------------------
   if (typeof ema20 !== "number" || typeof ema50 !== "number") {
     return {
@@ -123,18 +125,21 @@ function generateOptionsSignal(context = {}) {
   else if (ema20 < ema50) trend = "DOWNTREND";
 
   // --------------------------------------------------
-  // 🔒 OPTIONS NO-TRADE ZONE (LOCKED)
+  // OPTIONS NO-TRADE ZONE (LOCKED)
   // --------------------------------------------------
   if (isNoTradeZone({ spotPrice, ema20, ema50 })) {
     return {
       status: "WAIT",
       trend,
-      reason: "Options no-trade zone: EMA compression / price noise",
+      regime: "NO_TRADE_ZONE",
+      buyerAllowed: false,
+      sellerAllowed: false,
+      reason: "EMA compression / price noise zone",
     };
   }
 
   // --------------------------------------------------
-  // RSI SANITY CHECK (OPTIONS) – LOCKED
+  // RSI SANITY CHECK (OPTIONS)
   // --------------------------------------------------
   if (typeof rsi !== "number") {
     return {
@@ -143,30 +148,50 @@ function generateOptionsSignal(context = {}) {
     };
   }
 
-  if (rsi >= 70) {
-    return {
-      status: "WAIT",
-      reason: "RSI overbought – no fresh options entry",
-    };
+  const rsiExtreme = rsi >= 70 || rsi <= 30;
+
+  // --------------------------------------------------
+  // BUYER vs SELLER REGIME (FOUNDATION)
+  // --------------------------------------------------
+  let regime = "SIDEWAYS";
+  let buyerAllowed = false;
+  let sellerAllowed = false;
+
+  // Strong trend → Buyer allowed
+  if ((trend === "UPTREND" || trend === "DOWNTREND") && !rsiExtreme) {
+    regime = "TRENDING";
+    buyerAllowed = true;
+    sellerAllowed = false;
   }
 
-  if (rsi <= 30) {
-    return {
-      status: "WAIT",
-      reason: "RSI oversold – no fresh options entry",
-    };
+  // Sideways market → Seller allowed
+  if (trend === "SIDEWAYS" && !rsiExtreme) {
+    regime = "SIDEWAYS";
+    buyerAllowed = false;
+    sellerAllowed = true;
+  }
+
+  // High risk zone (RSI extreme / VIX spike)
+  if (rsiExtreme || vix >= 18) {
+    regime = "HIGH_RISK";
+    buyerAllowed = false;
+    sellerAllowed = false;
   }
 
   // --------------------------------------------------
-  // FINAL ENGINE OUTPUT (NO BUY / SELL)
+  // FINAL OUTPUT (NO EXECUTION)
   // --------------------------------------------------
   return {
-    status: "WAIT",
+    status: "READY",
     engine: "OPTIONS_SIGNAL_ENGINE",
+    symbol,
+    spotPrice,
     trend,
-    rsiStatus: "NORMAL",
+    regime,          // TRENDING / SIDEWAYS / NO_TRADE_ZONE / HIGH_RISK
+    buyerAllowed,
+    sellerAllowed,
     note:
-      "EMA trend + RSI sanity + no-trade zone evaluated. Rules locked.",
+      "Options regime evaluated (buyer/seller rules applied, no execution)",
   };
 }
 
