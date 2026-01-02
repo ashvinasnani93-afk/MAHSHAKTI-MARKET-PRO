@@ -13,16 +13,16 @@
  * No direct market / API calls here
  */
 function generateOptionsSignal(context = {}) {
- const {
-  symbol,
-  spotPrice,
-  expiryType,
-  tradeContext,
-  safety,
+  const {
+    symbol,
+    spotPrice,
+    expiryType,
+    tradeContext,
+    safety,
 
-  ema20,
-  ema50,
-} = context;
+    ema20,
+    ema50,
+  } = context;
 
   // --------------------------------------------------
   // HARD INPUT VALIDATION
@@ -82,12 +82,30 @@ function generateOptionsSignal(context = {}) {
   }
 
   // --------------------------------------------------
-  // SIGNAL ENGINE STATUS (RULES LOCKED – NO EXECUTION)
+  // TREND CHECK (EMA 20 / EMA 50) – LOCKED
+  // --------------------------------------------------
+  if (typeof ema20 !== "number" || typeof ema50 !== "number") {
+    return {
+      status: "WAIT",
+      reason: "EMA data missing for options trend evaluation",
+    };
+  }
+
+  let trend = "SIDEWAYS";
+  if (ema20 > ema50) {
+    trend = "UPTREND";
+  } else if (ema20 < ema50) {
+    trend = "DOWNTREND";
+  }
+
+  // --------------------------------------------------
+  // FINAL ENGINE OUTPUT (NO BUY / SELL)
   // --------------------------------------------------
   return {
     status: "WAIT",
     engine: "OPTIONS_SIGNAL_ENGINE",
-    note: "Signal engine ready. Awaiting indicator + price action rules.",
+    trend,
+    note: "EMA trend evaluated. Signal rules locked (no execution).",
   };
 }
 
