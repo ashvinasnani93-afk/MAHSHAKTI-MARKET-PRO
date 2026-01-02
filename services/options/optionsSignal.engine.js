@@ -128,13 +128,8 @@ function generateOptionsSignal(context = {}) {
   }
 
   // --------------------------------------------------
-  // BUYER / SELLER REGIME (FOUNDATION)
+  // BUYER ENGINE (FINAL AUTHORITY FOR BUY)
   // --------------------------------------------------
-  let regime = "SIDEWAYS";
-  let buyerAllowed = false;
-  let sellerAllowed = false;
-
-  // ---------- BUYER ENGINE (FINAL AUTHORITY FOR BUY)
   const buyerContext = evaluateBuyerContext({
     trend,
     rsi,
@@ -143,19 +138,16 @@ function generateOptionsSignal(context = {}) {
     tradeContext,
   });
 
-  buyerAllowed = buyerContext.buyerAllowed;
-
-  // ---------- SELLER BASE CONDITION
-  if (!buyerAllowed) {
-    regime = "SIDEWAYS";
-    sellerAllowed = true;
-  } else {
-    regime = "TRENDING";
-    sellerAllowed = false;
-  }
+  const buyerAllowed = buyerContext.buyerAllowed;
 
   // --------------------------------------------------
-  // 🔥 SELLER ENGINE (FINAL AUTHORITY FOR SELL)
+  // REGIME DECISION (PERMISSION ONLY)
+  // --------------------------------------------------
+  let regime = buyerAllowed ? "TRENDING" : "SIDEWAYS";
+  let sellerAllowed = !buyerAllowed; // permission only
+
+  // --------------------------------------------------
+  // SELLER ENGINE (FINAL AUTHORITY FOR SELL)
   // --------------------------------------------------
   let sellerContext = null;
 
@@ -176,7 +168,7 @@ function generateOptionsSignal(context = {}) {
         regime,
         buyerAllowed: false,
         sellerAllowed: false,
-        reason: sellerContext.note,
+        reason: sellerContext.reason || sellerContext.note,
       };
     }
   }
