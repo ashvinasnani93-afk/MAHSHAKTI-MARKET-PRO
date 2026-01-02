@@ -3,7 +3,7 @@
 // Android / Frontend ready
 // ==========================================
 
-const { getOptionsContext } = require("./options/optionsMaster.service");
+const { getOptionsContext } = require("./optionsMaster.service");
 
 // ------------------------------------------
 // GET /options/context
