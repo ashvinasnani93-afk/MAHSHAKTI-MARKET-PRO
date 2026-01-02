@@ -38,8 +38,11 @@ function getOptions(req, res) {
     const optionsContext = getOptionsContext({
       symbol: body.symbol,
       spotPrice: body.spotPrice,
-      expiry: body.expiry,         // WEEKLY / MONTHLY
-      tradeType: body.tradeType,   // INTRADAY / POSITIONAL
+      expiry: body.expiry,           // WEEKLY / MONTHLY
+      tradeType: body.tradeType,     // INTRADAY / POSITIONAL
+      // safety flags forward (if provided)
+      isResultDay: body.isResultDay === true,
+      isExpiryDay: body.isExpiryDay === true,
     });
 
     if (optionsContext.status !== "READY") {
@@ -55,10 +58,10 @@ function getOptions(req, res) {
     // -----------------------------
     const signalResult = generateOptionsSignal({
       ...optionsContext,
-      ema20: body.ema20,
-      ema50: body.ema50,
-      rsi: body.rsi,
-      vix: body.vix, // optional, safety-only
+      ema20: typeof body.ema20 === "number" ? body.ema20 : undefined,
+      ema50: typeof body.ema50 === "number" ? body.ema50 : undefined,
+      rsi: typeof body.rsi === "number" ? body.rsi : undefined,
+      vix: typeof body.vix === "number" ? body.vix : undefined, // safety-only
     });
 
     // -----------------------------
