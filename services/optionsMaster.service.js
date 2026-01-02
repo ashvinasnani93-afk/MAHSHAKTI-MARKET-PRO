@@ -5,7 +5,7 @@
 // ==========================================
 
 const { getOptionsSafetyContext } = require("./options/optionsSafety.service");
-
+const { createPaperTrade } = require("./optionsPaperTrade.service");
 /**
  * getOptionsContext
  * @param {object} data
@@ -55,19 +55,30 @@ function getOptionsContext(data = {}) {
     tradeContext,
   });
 
-  // -----------------------------
-  // FINAL OPTIONS CONTEXT
-  // (NO BUY / SELL — LOCKED)
-  // -----------------------------
-  return {
-    status: "READY",
-    symbol,
-    spotPrice,
-    expiryType,
-    tradeContext,
-    safety: safetyContext.safety,
-    note: "Options master + safety context ready (no signal yet)",
-  };
+ 
+ 
+ // -----------------------------
+// PAPER TRADE CONTEXT (NO EXECUTION)
+// -----------------------------
+const paperTradePreview = createPaperTrade({
+  symbol,
+  optionType: "CE",        // abhi fixed, next step me dynamic hoga
+  entryPrice: spotPrice,
+  quantity: 1,
+  signal: "BUY",
+});
+
+
+return {
+  status: "READY",
+  symbol,
+  spotPrice,
+  expiryType,
+  tradeContext,
+  safety: safetyContext.safety,
+  paperTradePreview,
+  note: "Options master + safety + paper trade preview ready",
+};
 }
 
 // ==========================================
