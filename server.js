@@ -12,6 +12,10 @@ const { authenticator } = require("otplib");
 
 const { getSignal } = require("./signal.api");
 const { getOptionChain } = require("./optionchain.api");
+
+// ✅ OPTIONS CONTEXT API (PHASE-3 START)
+const { getOptionsContextApi } = require("./services/options/options.api");
+
 const { loadOptionSymbolMaster } = require("./token.service");
 
 const app = express();
@@ -57,6 +61,11 @@ if (!ANGEL_TOTP_SECRET) throw new Error("ANGEL_TOTP_SECRET missing");
 // SIGNAL API (BUY / SELL / WAIT)
 // ==========================================
 app.post("/signal", getSignal);
+
+// ==========================================
+// OPTIONS CONTEXT API (PHASE-3)
+// ==========================================
+app.post("/options/context", getOptionsContextApi);
 
 // ==========================================
 // GLOBAL STATE
