@@ -10,14 +10,19 @@ const {
   checkBreakout,
   checkVolume,
 } = require("./signal.engine");
+
 // ⚡ INTRADAY FAST MOVE ENGINE
 const { detectFastMove } = require("./services/intradayFastMove.service");
+
 // 🔒 SAFETY LAYER (Phase-1 LOCKED)
 const { applySafety } = require("./signalSafety.service");
 
 // 🏦 INSTITUTIONAL CONTEXT (REAL – PHASE-2A)
 const { summarizeOI } = require("./institutional/oi.service");
 const { getPCRContext } = require("./institutional/pcr.service");
+
+// 🧠 GREEKS CONTEXT (TEXT ONLY – PHASE-2A)
+const { getGreeksContext } = require("./greeks.service");
 
 /**
  * finalDecision
@@ -100,36 +105,41 @@ function finalDecision(data) {
       safetyContext
     );
   }
-// -------------------------------
-// STEP 4.5: INTRADAY FAST MOVE CHECK (PHASE-2B)
-// -------------------------------
-if (data.tradeType === "INTRADAY") {
-  const fastMoveResult = detectFastMove({
-    ltp: data.close,
-    prevLtp: data.prevClose,
-    volume: data.volume,
-    avgVolume: data.avgVolume,
-    trend: trendResult.trend,
-    isExpiryDay: safetyContext.isExpiryDay,
-    isResultDay: safetyContext.isResultDay,
-  });
 
-  if (fastMoveResult.signal && fastMoveResult.signal !== "WAIT") {
-    return applySafety(
-      {
-        signal: fastMoveResult.signal,
-        reason: fastMoveResult.reason,
-        mode: fastMoveResult.mode,
-      },
-      safetyContext
-    );
+  // -------------------------------
+  // STEP 4.5: INTRADAY FAST MOVE CHECK (PHASE-2B)
+  // -------------------------------
+  if (data.tradeType === "INTRADAY") {
+    const fastMoveResult = detectFastMove({
+      ltp: data.close,
+      prevLtp: data.prevClose,
+      volume: data.volume,
+      avgVolume: data.avgVolume,
+      trend: trendResult.trend,
+      isExpiryDay: safetyContext.isExpiryDay,
+      isResultDay: safetyContext.isResultDay,
+    });
+
+    if (fastMoveResult.signal && fastMoveResult.signal !== "WAIT") {
+      return applySafety(
+        {
+          signal: fastMoveResult.signal,
+          reason: fastMoveResult.reason,
+          mode: fastMoveResult.mode,
+        },
+        safetyContext
+      );
+    }
   }
-}
+
   // -------------------------------
   // STEP 5: INSTITUTIONAL CONFIRMATION
   // -------------------------------
   const oiSummary = summarizeOI(data.oiData || []);
   const pcrContext = getPCRContext(data.pcrValue);
+
+  // 🧠 GREEKS CONTEXT (NON-BLOCKING)
+  const greeksContext = getGreeksContext(data.greeks || {});
 
   // ❌ Block BUY if institution bearish
   if (
@@ -141,6 +151,7 @@ if (data.tradeType === "INTRADAY") {
         signal: "WAIT",
         trend: trendResult.trend,
         reason: "Technical BUY but institutional bearish",
+        greeksNote: greeksContext.note,
       },
       safetyContext
     );
@@ -156,6 +167,7 @@ if (data.tradeType === "INTRADAY") {
         signal: "WAIT",
         trend: trendResult.trend,
         reason: "Technical SELL but institutional bullish",
+        greeksNote: greeksContext.note,
       },
       safetyContext
     );
@@ -168,6 +180,12 @@ if (data.tradeType === "INTRADAY") {
     signal: breakoutResult.action, // BUY / SELL
     trend: trendResult.trend,
     reason: "Technical + Institutional conditions aligned",
+
+    // 🧠 CONTEXT ONLY (NO FORCE)
+    institutionalBias: oiSummary.bias,
+    pcrBias: pcrContext.bias,
+    greeksBias: greeksContext.bias,
+    greeksNote: greeksContext.note,
   };
 
   // 🔒 APPLY SAFETY (Result / Expiry / Overtrade / VIX context)
