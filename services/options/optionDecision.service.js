@@ -1,7 +1,7 @@
 // ==================================================
 // OPTION DECISION SERVICE (PHASE-4 | STEP-2A)
 // FINAL OPTIONS DECISION BRAIN
-// BUY vs SELL vs NO-TRADE (TEXT ONLY)
+// BUY vs SELL vs NO-TRADE (TEXT + UI SYMBOL)
 // RULE-LOCKED | NO EXECUTION
 // ==================================================
 
@@ -14,10 +14,10 @@ const { generateOptionsSignal } = require("./optionsSignal.engine");
  *
  * This service:
  * - FINAL decision wrapper for OPTIONS only
- * - BUY / SELL / NO-TRADE (TEXT)
-// - Theta decay awareness (TEXT)
-// - Greeks bias awareness (TEXT)
-// - Expiry + Overnight risk awareness
+ * - BUY / SELL / NO-TRADE (TEXT + UI SYMBOL)
+ * - Theta decay awareness (TEXT)
+ * - Greeks bias awareness (TEXT)
+ * - Expiry + Overnight risk awareness
  * - Clear separation from Equity logic
  */
 function decideOptionTrade(data = {}) {
@@ -28,6 +28,9 @@ function decideOptionTrade(data = {}) {
     return {
       status: "WAIT",
       decision: "NO_TRADE",
+      uiSignal: "WAIT",
+      uiColor: "YELLOW",
+      uiIcon: "🟡",
       reason: "Invalid options decision input",
     };
   }
@@ -41,6 +44,9 @@ function decideOptionTrade(data = {}) {
     return {
       status: "WAIT",
       decision: "NO_TRADE",
+      uiSignal: signalContext?.uiSignal || "WAIT",
+      uiColor: signalContext?.uiColor || "YELLOW",
+      uiIcon: signalContext?.uiIcon || "🟡",
       reason: signalContext?.reason || "Options signal not ready",
     };
   }
@@ -53,10 +59,15 @@ function decideOptionTrade(data = {}) {
     buyerReason,
     sellerReason,
     sellerStrategy,
+
+    // 🔒 UI SIGNAL (LOCKED FROM ENGINE)
+    uiSignal,
+    uiColor,
+    uiIcon,
   } = signalContext;
 
   // ----------------------------------
-  // STEP 2: EXPIRY + OVERNIGHT RISK (TEXT)
+  // STEP 2: EXPIRY + OVERNIGHT RISK
   // ----------------------------------
   let expiryRiskNote = "Normal expiry risk";
 
@@ -71,12 +82,12 @@ function decideOptionTrade(data = {}) {
   }
 
   let overnightRiskNote =
-    data.tradeType === "POSITIONAL_OPTIONS"
+    data.tradeContext === "POSITIONAL_OPTIONS"
       ? "Overnight risk present: gap-up / gap-down possible"
       : "Intraday options: no overnight holding risk";
 
   // ----------------------------------
-  // STEP 3: THETA DECAY AWARENESS (TEXT)
+  // STEP 3: THETA DECAY CONTEXT
   // ----------------------------------
   let thetaNote = "Theta impact neutral";
 
@@ -89,7 +100,7 @@ function decideOptionTrade(data = {}) {
   }
 
   // ----------------------------------
-  // STEP 4: GREEKS AWARENESS (SIMPLIFIED TEXT)
+  // STEP 4: GREEKS CONTEXT (SIMPLIFIED)
   // ----------------------------------
   let greeksNote = "Greeks balanced";
 
@@ -107,16 +118,21 @@ function decideOptionTrade(data = {}) {
   }
 
   // ----------------------------------
-  // STEP 5: BUYER DECISION (OPTIONS BUY)
+  // STEP 5: OPTION BUY DECISION
   // ----------------------------------
   if (buyerAllowed) {
     return {
       status: "OK",
       decision: "OPTION_BUY_ALLOWED",
       mode: "OPTIONS_BUYER",
+
+      // 🔥 UI OUTPUT (CONFUSION-FREE)
+      uiSignal,
+      uiColor,
+      uiIcon,
+
       trend,
       regime,
-
       thetaContext: thetaNote,
       greeksContext: greeksNote,
       expiryRisk: expiryRiskNote,
@@ -124,18 +140,24 @@ function decideOptionTrade(data = {}) {
 
       reason: buyerReason || "Options buyer conditions satisfied",
       note:
-        "Options BUY allowed. This is NOT equity buying. Premium decay risk applies.",
+        "Options BUY allowed. Premium decay risk applies. This is NOT equity buying.",
     };
   }
 
   // ----------------------------------
-  // STEP 6: SELLER DECISION (OPTIONS SELL)
+  // STEP 6: OPTION SELL DECISION
   // ----------------------------------
   if (sellerAllowed) {
     return {
       status: "OK",
       decision: "OPTION_SELL_ALLOWED",
       mode: "OPTIONS_SELLER",
+
+      // 🔥 UI OUTPUT
+      uiSignal,
+      uiColor,
+      uiIcon,
+
       trend,
       regime,
       strategy: sellerStrategy || "RANGE_SELL",
@@ -157,9 +179,14 @@ function decideOptionTrade(data = {}) {
   return {
     status: "WAIT",
     decision: "NO_TRADE",
+
+    // 🔥 UI OUTPUT
+    uiSignal,
+    uiColor,
+    uiIcon,
+
     trend,
     regime,
-
     thetaContext: thetaNote,
     greeksContext: greeksNote,
     expiryRisk: expiryRiskNote,
