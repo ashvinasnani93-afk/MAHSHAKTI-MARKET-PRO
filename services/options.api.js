@@ -1,7 +1,7 @@
 // ==========================================
 // OPTIONS API (PHASE-4 | STEP-2C FINAL)
 // Single Entry Point for Options Module
-// SAFETY → DECISION → RESPONSE
+// SAFETY → DECISION → UI RESPONSE
 // NO EXECUTION | FRONTEND READY
 // ==========================================
 
@@ -35,14 +35,13 @@ function getOptions(req, res) {
 
     // -----------------------------
     // STEP 1: OPTIONS MASTER CONTEXT
+    // (mapping aligned with master service)
     // -----------------------------
     const optionsContext = getOptionsContext({
       symbol: body.symbol,
       spotPrice: body.spotPrice,
-      expiryType: body.expiryType,          // WEEKLY_EXPIRY / MONTHLY_EXPIRY
-      tradeContext: body.tradeContext,      // INTRADAY_OPTIONS / POSITIONAL_OPTIONS
-      isResultDay: body.isResultDay === true,
-      isExpiryDay: body.isExpiryDay === true,
+      expiry: body.expiry,                 // WEEKLY / MONTHLY
+      tradeType: body.tradeType,           // INTRADAY / POSITIONAL
     });
 
     if (optionsContext.status !== "READY") {
@@ -67,6 +66,9 @@ function getOptions(req, res) {
         decision: {
           status: "WAIT",
           decision: "NO_TRADE",
+          uiSignal: "WAIT",
+          uiColor: "YELLOW",
+          uiText: "Wait",
           reason: safetyContext.safety.reason || "Options safety restriction",
           riskLevel: safetyContext.safety.riskLevel,
         },
@@ -74,14 +76,10 @@ function getOptions(req, res) {
     }
 
     // -----------------------------
-    // STEP 3: FINAL OPTIONS DECISION ENGINE
+    // STEP 3: FINAL OPTIONS DECISION
     // -----------------------------
-    const finalDecision = decideOptionTrade({
+    const decision = decideOptionTrade({
       ...optionsContext,
-      expiryType: optionsContext.expiryType,
-      tradeContext: optionsContext.tradeContext,
-
-      // Technical + context inputs (TEXT only usage)
       ema20: body.ema20,
       ema50: body.ema50,
       rsi: body.rsi,
@@ -89,12 +87,36 @@ function getOptions(req, res) {
     });
 
     // -----------------------------
-    // FINAL API RESPONSE
+    // UI SIGNAL MAPPING (LOCKED RULE)
+    // -----------------------------
+    let uiSignal = "WAIT";
+    let uiColor = "YELLOW";
+    let uiText = "Wait";
+
+    if (decision.decision === "OPTION_BUY_ALLOWED") {
+      uiSignal = "BUY";
+      uiColor = "GREEN";
+      uiText = "Buy";
+    }
+
+    if (decision.decision === "OPTION_SELL_ALLOWED") {
+      uiSignal = "SELL";
+      uiColor = "RED";
+      uiText = "Sell";
+    }
+
+    // -----------------------------
+    // FINAL API RESPONSE (FROZEN FORMAT)
     // -----------------------------
     return res.json({
       status: true,
       context: optionsContext,
-      decision: finalDecision,
+      decision: {
+        ...decision,
+        uiSignal,
+        uiColor,
+        uiText,
+      },
     });
   } catch (e) {
     console.error("❌ Options API Error:", e.message);
