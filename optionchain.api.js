@@ -1,6 +1,8 @@
 // ==========================================
-// OPTION CHAIN API – FINAL (A3.5)
+// OPTION CHAIN API – FINAL (A3.5 LOCKED)
 // Angel = SINGLE SOURCE OF TRUTH
+// SYMBOL-BASED CONTEXT (🟢 🔴 🟡)
+// NO BUY / SELL WORDS | NO EXECUTION
 // ==========================================
 
 const { getValidStrikes } = require("./strike.service");
@@ -35,7 +37,7 @@ async function getOptionChain(req, res) {
     }
 
     // -------------------------------
-    // STRIKES (ANGEL SOURCE OF TRUTH)
+    // STRIKES (ANGEL – SOURCE OF TRUTH)
     // -------------------------------
     const strikes = getValidStrikes({
       index: INDEX,
@@ -51,22 +53,64 @@ async function getOptionChain(req, res) {
 
     // -------------------------------
     // BUILD OPTION CHAIN
+    // (NO SIGNAL, CONTEXT ONLY)
     // -------------------------------
-    const chain = buildOptionChain({
+    const rawChain = buildOptionChain({
       index: INDEX,
       expiryDate,
       strikes,
     });
 
     // -------------------------------
-    // RESPONSE
+    // SYMBOL CONTEXT MAPPING (LOCKED)
+    // 🟢 Buyer-favourable
+    // 🔴 Seller-favourable
+    // 🟡 No-trade / wait
+    // -------------------------------
+    const chain = {};
+
+    Object.keys(rawChain).forEach((strike) => {
+      const row = rawChain[strike];
+
+      chain[strike] = {
+        strike: Number(strike),
+
+        CE: {
+          ...row.CE,
+          contextSymbol: row.CE?.buyerBias
+            ? "🟢"
+            : row.CE?.sellerBias
+            ? "🔴"
+            : "🟡",
+        },
+
+        PE: {
+          ...row.PE,
+          contextSymbol: row.PE?.buyerBias
+            ? "🟢"
+            : row.PE?.sellerBias
+            ? "🔴"
+            : "🟡",
+        },
+      };
+    });
+
+    // -------------------------------
+    // FINAL RESPONSE (FRONTEND READY)
     // -------------------------------
     return res.json({
       status: true,
       index: INDEX,
       expiry: expiryDate.toISOString().slice(0, 10),
+      legend: {
+        "🟢": "Buyer-favourable zone",
+        "🔴": "Seller-favourable zone",
+        "🟡": "No-trade / wait zone",
+      },
       totalStrikes: Object.keys(chain).length,
       chain,
+      note:
+        "Context-only option chain. Symbols indicate buyer/seller pressure. No execution or recommendation.",
     });
   } catch (e) {
     console.error("❌ OptionChain API Error:", e);
