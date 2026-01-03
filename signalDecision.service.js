@@ -18,11 +18,15 @@ const { detectFastMove } = require("./services/intradayFastMove.service");
 const { applySafety } = require("./signalSafety.service");
 
 // 🏦 INSTITUTIONAL CONTEXT (REAL – PHASE-2A)
-const { summarizeOI } = require("./institutional_oi.service");
-const { getPCRContext } = require("./institutional_pcr.service");
+// ✅ OI
+const { summarizeOI } = require("./services/institutional_oi.service");
+
+// ✅ PCR
+const { getPCRContext } = require("./services/institutional_pcr.service");
 
 // 🧠 GREEKS CONTEXT (TEXT ONLY – PHASE-2A)
-const { getGreeksContext } = require("./greeks.service");
+// ✅ Greeks
+const { getGreeksContext } = require("./services/greeks.service");
 
 /**
  * finalDecision
