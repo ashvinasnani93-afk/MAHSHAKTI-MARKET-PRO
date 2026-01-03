@@ -2,6 +2,7 @@
 // SIGNAL API – FINAL (PHASE-2A READY)
 // BUY / SELL / WAIT
 // ANDROID READY + SAFETY + INSTITUTIONAL
+// INDEX / STOCK AGNOSTIC (A1)
 // ==========================================
 
 const { finalDecision } = require("./signalDecision.service");
@@ -35,6 +36,12 @@ function getSignal(req, res) {
     // (ENGINE + SAFETY + INSTITUTIONAL)
     // -------------------------------
     const data = {
+      // ===== INSTRUMENT CONTEXT (A1) =====
+      symbol: body.symbol || null,                 // NIFTY / BANKNIFTY / RELIANCE
+      indexName: body.indexName || null,           // FINNIFTY / MIDCPNIFTY etc
+      instrumentType: body.instrumentType || "INDEX", // INDEX / STOCK
+      segment: body.segment || "CASH",             // CASH / OPTIONS / FUTURES
+
       // ===== PRICE / TECHNICAL =====
       closes: body.closes,
       ema20: body.ema20 || [],
@@ -74,9 +81,11 @@ function getSignal(req, res) {
 
     if (typeof data.vix === "number") {
       if (data.vix >= 18) {
-        vixNote = "High volatility (VIX elevated) – reduce position size & expect fast moves";
+        vixNote =
+          "High volatility (VIX elevated) – reduce position size & expect fast moves";
       } else if (data.vix <= 12) {
-        vixNote = "Low volatility (VIX calm) – breakout follow-through may be slow";
+        vixNote =
+          "Low volatility (VIX calm) – breakout follow-through may be slow";
       } else {
         vixNote = "Normal volatility conditions";
       }
@@ -84,6 +93,14 @@ function getSignal(req, res) {
 
     return res.json({
       status: true,
+
+      // ===== CONTEXT (OPTIONAL FOR FRONTEND) =====
+      symbol: data.symbol,
+      indexName: data.indexName,
+      instrumentType: data.instrumentType,
+      segment: data.segment,
+
+      // ===== SIGNAL OUTPUT =====
       signal: result.signal,        // BUY / SELL / WAIT
       trend: result.trend || null,  // UPTREND / DOWNTREND / null
       reason: result.reason,        // explainable output
