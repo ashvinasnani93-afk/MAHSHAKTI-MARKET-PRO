@@ -1,16 +1,16 @@
 // ==========================================
-// OPTIONS API (PHASE-4)
-// Entry point for Options module
-// Context + Signal + FINAL DECISION
+// OPTIONS API (PHASE-4 | STEP-2C FINAL)
+// Single Entry Point for Options Module
+// SAFETY → DECISION → RESPONSE
 // NO EXECUTION | FRONTEND READY
 // ==========================================
 
 const { getOptionsContext } = require("./optionsMaster.service");
-const { generateOptionsSignal } = require("./optionsSignal.engine");
+const { getOptionsSafetyContext } = require("./optionsSafety.service");
 const { decideOptionTrade } = require("./optionDecision.service");
 
 // ==========================================
-// POST /options/context
+// POST /options
 // ==========================================
 function getOptions(req, res) {
   try {
@@ -39,8 +39,8 @@ function getOptions(req, res) {
     const optionsContext = getOptionsContext({
       symbol: body.symbol,
       spotPrice: body.spotPrice,
-      expiry: body.expiry,           // WEEKLY / MONTHLY
-      tradeType: body.tradeType,     // INTRADAY / POSITIONAL
+      expiryType: body.expiryType,          // WEEKLY_EXPIRY / MONTHLY_EXPIRY
+      tradeContext: body.tradeContext,      // INTRADAY_OPTIONS / POSITIONAL_OPTIONS
       isResultDay: body.isResultDay === true,
       isExpiryDay: body.isExpiryDay === true,
     });
@@ -53,24 +53,35 @@ function getOptions(req, res) {
     }
 
     // -----------------------------
-    // STEP 2: OPTIONS SIGNAL ENGINE
-    // Buyer / Seller permission
+    // STEP 2: OPTIONS SAFETY CHECK (MANDATORY)
     // -----------------------------
-    const signalResult = generateOptionsSignal({
-      ...optionsContext,
-      ema20: typeof body.ema20 === "number" ? body.ema20 : undefined,
-      ema50: typeof body.ema50 === "number" ? body.ema50 : undefined,
-      rsi: typeof body.rsi === "number" ? body.rsi : undefined,
-      vix: typeof body.vix === "number" ? body.vix : undefined,
+    const safetyContext = getOptionsSafetyContext({
+      symbol: optionsContext.symbol,
+      expiryType: optionsContext.expiryType,
+      tradeContext: optionsContext.tradeContext,
     });
 
+    if (safetyContext.safety?.allowTrade === false) {
+      return res.json({
+        status: true,
+        decision: {
+          status: "WAIT",
+          decision: "NO_TRADE",
+          reason: safetyContext.safety.reason || "Options safety restriction",
+          riskLevel: safetyContext.safety.riskLevel,
+        },
+      });
+    }
+
     // -----------------------------
-    // STEP 3: FINAL OPTION DECISION
-    // BUY / SELL / NO_TRADE (TEXT ONLY)
+    // STEP 3: FINAL OPTIONS DECISION ENGINE
     // -----------------------------
     const finalDecision = decideOptionTrade({
       ...optionsContext,
-      ...signalResult,
+      expiryType: optionsContext.expiryType,
+      tradeContext: optionsContext.tradeContext,
+
+      // Technical + context inputs (TEXT only usage)
       ema20: body.ema20,
       ema50: body.ema50,
       rsi: body.rsi,
@@ -83,7 +94,6 @@ function getOptions(req, res) {
     return res.json({
       status: true,
       context: optionsContext,
-      signal: signalResult,
       decision: finalDecision,
     });
   } catch (e) {
