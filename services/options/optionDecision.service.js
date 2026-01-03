@@ -1,8 +1,8 @@
 // ==================================================
-// OPTION DECISION SERVICE (PHASE-4)
+// OPTION DECISION SERVICE (PHASE-4 | STEP-2A)
 // FINAL OPTIONS DECISION BRAIN
-// Buyer vs Seller | Theta | Greeks | Risk Context
-// NO EXECUTION | RULE-LOCKED
+// BUY vs SELL vs NO-TRADE (TEXT ONLY)
+// RULE-LOCKED | NO EXECUTION
 // ==================================================
 
 const { generateOptionsSignal } = require("./optionsSignal.engine");
@@ -13,11 +13,12 @@ const { generateOptionsSignal } = require("./optionsSignal.engine");
  * @returns {object}
  *
  * This service:
- * - Takes final context
- * - Decides BUY / SELL / NO_TRADE (TEXT only)
- * - Adds Theta decay awareness (text)
- * - Adds Greeks bias awareness (text)
- * - Gives clear, explainable reason
+ * - FINAL decision wrapper for OPTIONS only
+ * - BUY / SELL / NO-TRADE (TEXT)
+// - Theta decay awareness (TEXT)
+// - Greeks bias awareness (TEXT)
+// - Expiry + Overnight risk awareness
+ * - Clear separation from Equity logic
  */
 function decideOptionTrade(data = {}) {
   // ----------------------------------
@@ -55,80 +56,115 @@ function decideOptionTrade(data = {}) {
   } = signalContext;
 
   // ----------------------------------
-  // STEP 2: THETA DECAY AWARENESS (TEXT ONLY)
+  // STEP 2: EXPIRY + OVERNIGHT RISK (TEXT)
   // ----------------------------------
-  let thetaNote = "Theta neutral";
+  let expiryRiskNote = "Normal expiry risk";
 
   if (data.expiryType === "WEEKLY_EXPIRY") {
-    thetaNote = "High theta decay risk (weekly expiry)";
+    expiryRiskNote =
+      "Weekly expiry: fast theta decay and sudden premium movement risk";
   }
 
   if (data.expiryType === "MONTHLY_EXPIRY") {
-    thetaNote = "Moderate theta decay (monthly expiry)";
+    expiryRiskNote =
+      "Monthly expiry: moderate theta decay, overnight gap risk exists";
+  }
+
+  let overnightRiskNote =
+    data.tradeType === "POSITIONAL_OPTIONS"
+      ? "Overnight risk present: gap-up / gap-down possible"
+      : "Intraday options: no overnight holding risk";
+
+  // ----------------------------------
+  // STEP 3: THETA DECAY AWARENESS (TEXT)
+  // ----------------------------------
+  let thetaNote = "Theta impact neutral";
+
+  if (data.expiryType === "WEEKLY_EXPIRY") {
+    thetaNote = "High theta decay: time works against option buyers";
+  }
+
+  if (data.expiryType === "MONTHLY_EXPIRY") {
+    thetaNote = "Moderate theta decay: time impact slower than weekly";
   }
 
   // ----------------------------------
-  // STEP 3: GREEKS AWARENESS (SIMPLIFIED TEXT)
+  // STEP 4: GREEKS AWARENESS (SIMPLIFIED TEXT)
   // ----------------------------------
-  let greeksNote = "Greeks neutral";
+  let greeksNote = "Greeks balanced";
 
   if (trend === "UPTREND") {
-    greeksNote = "Delta supportive, Gamma risk controlled";
+    greeksNote = "Positive delta bias; gamma sensitivity manageable";
   }
 
   if (trend === "DOWNTREND") {
-    greeksNote = "Negative delta bias, gamma sensitivity present";
+    greeksNote = "Negative delta bias; gamma risk during fast moves";
   }
 
   if (regime === "SIDEWAYS") {
-    greeksNote = "Theta dominant, Vega contraction expected";
+    greeksNote =
+      "Theta dominant; option selling favoured, vega contraction likely";
   }
 
   // ----------------------------------
-  // STEP 4: BUYER DECISION
+  // STEP 5: BUYER DECISION (OPTIONS BUY)
   // ----------------------------------
   if (buyerAllowed) {
     return {
       status: "OK",
       decision: "OPTION_BUY_ALLOWED",
-      mode: "BUYER",
+      mode: "OPTIONS_BUYER",
       trend,
       regime,
+
       thetaContext: thetaNote,
       greeksContext: greeksNote,
-      reason: buyerReason || "Buyer conditions satisfied",
-      note: "Options BUY allowed (execution handled elsewhere)",
+      expiryRisk: expiryRiskNote,
+      overnightRisk: overnightRiskNote,
+
+      reason: buyerReason || "Options buyer conditions satisfied",
+      note:
+        "Options BUY allowed. This is NOT equity buying. Premium decay risk applies.",
     };
   }
 
   // ----------------------------------
-  // STEP 5: SELLER DECISION
+  // STEP 6: SELLER DECISION (OPTIONS SELL)
   // ----------------------------------
   if (sellerAllowed) {
     return {
       status: "OK",
       decision: "OPTION_SELL_ALLOWED",
-      mode: "SELLER",
+      mode: "OPTIONS_SELLER",
       trend,
       regime,
       strategy: sellerStrategy || "RANGE_SELL",
+
       thetaContext: thetaNote,
       greeksContext: greeksNote,
-      reason: sellerReason || "Seller conditions satisfied",
-      note: "Options SELL allowed (execution handled elsewhere)",
+      expiryRisk: expiryRiskNote,
+      overnightRisk: overnightRiskNote,
+
+      reason: sellerReason || "Options seller conditions satisfied",
+      note:
+        "Options SELL allowed. Premium decay works in favour, but risk is unlimited.",
     };
   }
 
   // ----------------------------------
-  // STEP 6: NO TRADE
+  // STEP 7: NO TRADE
   // ----------------------------------
   return {
     status: "WAIT",
     decision: "NO_TRADE",
     trend,
     regime,
+
     thetaContext: thetaNote,
     greeksContext: greeksNote,
+    expiryRisk: expiryRiskNote,
+    overnightRisk: overnightRiskNote,
+
     reason: "Neither buyer nor seller conditions satisfied",
   };
 }
