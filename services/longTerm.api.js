@@ -1,10 +1,12 @@
 // ==========================================
-// LONG TERM EQUITY API (PHASE-L1)
+// LONG TERM EQUITY API (PHASE-L1 FINAL)
 // Frontend Entry Point
-// HOLD / EXIT / ACCUMULATE (TEXT ONLY)
+// HOLD / PARTIAL EXIT / FULL EXIT (TEXT ONLY)
 // ==========================================
 
-const { decideLongTermEquity } = require("./longTermDecision.service");
+const {
+  decideLongTermAction,
+} = require("./longTermDecision.service");
 
 // ==========================================
 // POST /equity/long-term
@@ -23,22 +25,30 @@ function getLongTermEquity(req, res) {
       });
     }
 
-    if (!body.symbol || !Array.isArray(body.weeklyCloses)) {
+    if (
+      !body.symbol ||
+      !body.weeklyTrend ||
+      !body.monthlyTrend ||
+      typeof body.entryPrice !== "number" ||
+      typeof body.currentPrice !== "number"
+    ) {
       return res.json({
         status: false,
-        message: "symbol and weeklyCloses required",
+        message:
+          "symbol, weeklyTrend, monthlyTrend, entryPrice, currentPrice required",
       });
     }
 
     // -----------------------------
     // LONG TERM DECISION ENGINE
     // -----------------------------
-    const result = decideLongTermEquity({
+    const result = decideLongTermAction({
       symbol: body.symbol,
-      weeklyCloses: body.weeklyCloses,
-      monthlyCloses: body.monthlyCloses || [],
-      holdingSince: body.holdingSince || null, // optional
-      currentPrice: body.currentPrice || null,
+      weeklyTrend: body.weeklyTrend,     // UPTREND / DOWNTREND / SIDEWAYS
+      monthlyTrend: body.monthlyTrend,   // UPTREND / DOWNTREND / SIDEWAYS
+      entryPrice: body.entryPrice,
+      currentPrice: body.currentPrice,
+      timeInTradeDays: body.timeInTradeDays || null,
     });
 
     // -----------------------------
