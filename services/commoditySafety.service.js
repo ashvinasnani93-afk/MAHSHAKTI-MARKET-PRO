@@ -10,6 +10,7 @@
  * @returns {object}
  *
  * Used BEFORE commodity decision logic
+ * Safety only – no signal generation
  */
 function getCommoditySafetyContext(data = {}) {
   const {
@@ -24,6 +25,7 @@ function getCommoditySafetyContext(data = {}) {
   if (isEventDay) {
     return {
       status: "UNSAFE",
+      riskLevel: "HIGH",
       reason: "Commodity safety: event day risk",
     };
   }
@@ -34,6 +36,7 @@ function getCommoditySafetyContext(data = {}) {
   if (isSpikeCandle) {
     return {
       status: "UNSAFE",
+      riskLevel: "HIGH",
       reason: "Commodity safety: abnormal price spike detected",
     };
   }
@@ -44,6 +47,7 @@ function getCommoditySafetyContext(data = {}) {
   if (volatility === "HIGH") {
     return {
       status: "UNSAFE",
+      riskLevel: "HIGH",
       reason: "Commodity safety: extreme volatility",
     };
   }
@@ -53,6 +57,7 @@ function getCommoditySafetyContext(data = {}) {
   // -----------------------------
   return {
     status: "SAFE",
+    riskLevel: "NORMAL",
     note: "Commodity safety check passed",
   };
 }
