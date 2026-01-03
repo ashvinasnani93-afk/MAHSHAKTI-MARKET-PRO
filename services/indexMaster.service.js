@@ -6,46 +6,67 @@
 
 /**
  * INDEX / INSTRUMENT REGISTRY
- * This decides:
- * - Which symbols are allowed
- * - Which segments they belong to
- * - What trade types are allowed
- * - Whether OPTION CHAIN is supported
+ * Controls:
+ * - Allowed symbols
+ * - Segment visibility (Equity / Options / Commodity)
+ * - Trade type permission
+ * - Option chain availability
+ * - UI grouping & priority
  */
 const INDEX_REGISTRY = {
   // ==========================
-  // NSE INDEXES
+  // NSE CORE INDEXES
   // ==========================
   NIFTY: {
     instrumentType: "INDEX",
     exchange: "NSE",
+    category: "INDEX",
+    uiLabel: "NIFTY 50",
+    priority: 1,
+    isCore: true,
     segments: ["EQUITY", "OPTIONS"],
     allowedTradeTypes: ["INTRADAY", "POSITIONAL"],
     optionChain: true,
+    iconHint: "AUTO",
   },
 
   BANKNIFTY: {
     instrumentType: "INDEX",
     exchange: "NSE",
+    category: "INDEX",
+    uiLabel: "BANK NIFTY",
+    priority: 2,
+    isCore: true,
     segments: ["EQUITY", "OPTIONS"],
     allowedTradeTypes: ["INTRADAY", "POSITIONAL"],
     optionChain: true,
+    iconHint: "AUTO",
   },
 
   FINNIFTY: {
     instrumentType: "INDEX",
     exchange: "NSE",
+    category: "INDEX",
+    uiLabel: "FIN NIFTY",
+    priority: 3,
+    isCore: false,
     segments: ["EQUITY", "OPTIONS"],
     allowedTradeTypes: ["INTRADAY"],
     optionChain: true,
+    iconHint: "AUTO",
   },
 
   MIDCPNIFTY: {
     instrumentType: "INDEX",
     exchange: "NSE",
+    category: "INDEX",
+    uiLabel: "MIDCAP NIFTY",
+    priority: 4,
+    isCore: false,
     segments: ["EQUITY", "OPTIONS"],
     allowedTradeTypes: ["INTRADAY"],
     optionChain: true,
+    iconHint: "AUTO",
   },
 
   // ==========================
@@ -54,9 +75,14 @@ const INDEX_REGISTRY = {
   SENSEX: {
     instrumentType: "INDEX",
     exchange: "BSE",
+    category: "INDEX",
+    uiLabel: "SENSEX",
+    priority: 5,
+    isCore: true,
     segments: ["EQUITY", "OPTIONS"],
     allowedTradeTypes: ["INTRADAY", "POSITIONAL"],
     optionChain: true,
+    iconHint: "AUTO",
   },
 
   // ==========================
@@ -65,17 +91,27 @@ const INDEX_REGISTRY = {
   RELIANCE: {
     instrumentType: "STOCK",
     exchange: "NSE",
+    category: "STOCK",
+    uiLabel: "RELIANCE",
+    priority: 20,
+    isCore: false,
     segments: ["EQUITY", "OPTIONS"],
     allowedTradeTypes: ["INTRADAY", "POSITIONAL"],
     optionChain: true,
+    iconHint: "AUTO",
   },
 
   TCS: {
     instrumentType: "STOCK",
     exchange: "NSE",
+    category: "STOCK",
+    uiLabel: "TCS",
+    priority: 21,
+    isCore: false,
     segments: ["EQUITY", "OPTIONS"],
     allowedTradeTypes: ["INTRADAY", "POSITIONAL"],
     optionChain: true,
+    iconHint: "AUTO",
   },
 
   // ==========================
@@ -84,10 +120,15 @@ const INDEX_REGISTRY = {
   VIX: {
     instrumentType: "INDEX",
     exchange: "NSE",
+    category: "SYSTEM",
+    uiLabel: "INDIA VIX",
+    priority: 99,
+    isCore: true,
     segments: ["DISPLAY_ONLY"],
     allowedTradeTypes: [],
     optionChain: false,
-    note: "Used only for risk & safety context",
+    iconHint: "INFO",
+    note: "Used only for risk & safety context (no trading)",
   },
 };
 
