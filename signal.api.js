@@ -6,7 +6,7 @@
 // ==========================================
 
 const { finalDecision } = require("./signalDecision.service");
-const { getIndexConfig } = require("./indexMaster.service");
+const { getIndexConfig } = require("./services/indexMaster.service");
 
 // ==========================================
 // POST /signal
