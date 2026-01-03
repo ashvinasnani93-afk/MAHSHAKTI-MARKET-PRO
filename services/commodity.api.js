@@ -32,26 +32,34 @@ function getCommodity(req, res) {
     }
 
     // -----------------------------
-    // COMMODITY DECISION ENGINE
+    // NORMALIZED INPUT
     // -----------------------------
-    const result = decideCommodityTrade({
-      commodity: body.commodity,          // GOLD / SILVER / CRUDE / NATURAL_GAS
+    const decisionInput = {
+      commodity: body.commodity,               // GOLD / SILVER / CRUDE / NATURAL_GAS
       price: body.price,
-      trend: body.trend,                  // UPTREND / DOWNTREND / SIDEWAYS
-      userType: body.userType || "FREE",  // FREE / TRIAL / PRO
+      trend: body.trend || "SIDEWAYS",         // UPTREND / DOWNTREND / SIDEWAYS
+      userType: body.userType || "FREE",       // FREE / TRIAL / PRO
       safetyInput: {
         isEventDay: body.isEventDay === true,
         isSpikeCandle: body.isSpikeCandle === true,
         volatility: body.volatility || "NORMAL", // LOW / NORMAL / HIGH
       },
-    });
+    };
 
     // -----------------------------
-    // FINAL RESPONSE
+    // COMMODITY DECISION ENGINE
+    // -----------------------------
+    const result = decideCommodityTrade(decisionInput);
+
+    // -----------------------------
+    // FINAL RESPONSE (FRONTEND SAFE)
     // -----------------------------
     return res.json({
       status: true,
-      data: result,
+      commodity: decisionInput.commodity,
+      price: decisionInput.price,
+      decision: result,
+      note: "Commodity view is advisory only (no execution)",
     });
   } catch (e) {
     console.error("❌ Commodity API Error:", e.message);
